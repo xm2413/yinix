@@ -63,6 +63,7 @@ make --version
 
 ---
 
+
 ## 实现步骤
 
 ### 1. 初始化项目
@@ -79,6 +80,15 @@ make --version
 
 ### 2. Shell 主循环
 `src/main.cpp` 启动后显示 `Yinix>` 提示符并进入 REPL，读取用户输入，由 `Shell` 类解析命令名+参数后分发给对应子模块；支持 `help`、`exit` 全局命令，其余命令按前缀路由（如 `ps`/`proc`/`mem`/`fs`/`dev`）。
+
+**执行记录：**
+- [x] `Shell` 持有四个子模块管理器实例（`ProcessManager`、`MemoryManager`、`FileSystem`、`DeviceManager`）
+- [x] `dispatch()` 按命令名路由到 `handleProc` / `handleMem` / `handleFS` / `handleDev`
+- [x] 实现完整 `help` 帮助文档，列出所有命令及用法
+- [x] 参数不足时输出友好用法提示，数字参数异常时 catch 错误
+- [x] 编译验证通过
+
+> ✅ **步骤 2 已完成**，所有模块命令已接入 Shell，`yinix` 可正常交互。
 
 ### 3. 进程管理模块
 - `PCB.h`：定义 `PCB` 结构体，字段包括 `pid`、`name`、`state`（枚举 NEW/READY/RUNNING/BLOCKED/TERMINATED）、`priority`、`cpu_time`
