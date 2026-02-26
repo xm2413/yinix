@@ -26,6 +26,10 @@ std::string FileSystem::cwdPath() {
     return path;
 }
 
+std::string FileSystem::getCwd() {
+    return cwdPath();
+}
+
 void FileSystem::pwd() {
     std::cout << cwdPath() << "\n";
 }

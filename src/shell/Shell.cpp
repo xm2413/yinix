@@ -197,7 +197,7 @@ void Shell::run() {
     std::cout << "欢迎使用 Yinix OS 模拟器  (输入 help 查看命令)\n";
     std::string line;
     while (true) {
-        std::cout << "\nYinix> ";
+        std::cout << "\nYinix:" << fs.getCwd() << "> ";
         std::cout.flush();
         if (!std::getline(std::cin, line)) break;
         auto args = tokenize(line);

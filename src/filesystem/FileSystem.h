@@ -9,6 +9,7 @@ public:
 
     void pwd();
     void ls();
+    std::string getCwd();  // 返回当前路径字符串，供 Shell 显示提示符
     bool cd(const std::string& path);
     bool mkdir(const std::string& name);
     bool touch(const std::string& name);
