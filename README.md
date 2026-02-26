@@ -23,11 +23,12 @@
 | g++ | 11+ |
 | CMake | 3.16+ |
 | make | 任意 |
+| libreadline-dev | 任意 |
 
 Ubuntu / WSL 一键安装：
 
 ```bash
-sudo apt update && sudo apt install -y g++ cmake make
+sudo apt update && sudo apt install -y g++ cmake make libreadline-dev
 ```
 
 ---

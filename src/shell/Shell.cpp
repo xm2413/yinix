@@ -1,6 +1,8 @@
 #include "Shell.h"
 #include <iostream>
 #include <sstream>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 Shell::Shell() {}
 
@@ -195,11 +197,13 @@ void Shell::dispatch(const std::vector<std::string>& args) {
 // ─────────────────────────────────────────────
 void Shell::run() {
     std::cout << "欢迎使用 Yinix OS 模拟器  (输入 help 查看命令)\n";
-    std::string line;
     while (true) {
-        std::cout << "\nYinix:" << fs.getCwd() << "> ";
-        std::cout.flush();
-        if (!std::getline(std::cin, line)) break;
+        std::string prompt = "\nYinix:" + fs.getCwd() + "> ";
+        char* raw = readline(prompt.c_str());
+        if (!raw) break;          // Ctrl+D 退出
+        std::string line(raw);
+        free(raw);
+        if (!line.empty()) add_history(line.c_str());  // 加入历史
         auto args = tokenize(line);
         dispatch(args);
     }

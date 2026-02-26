@@ -10,3 +10,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(yinix ${SOURCES})
 
 target_include_directories(yinix PRIVATE src)
+
+# readline：上下键历史、行编辑
+find_library(READLINE_LIB readline REQUIRED)
+target_link_libraries(yinix PRIVATE ${READLINE_LIB})
