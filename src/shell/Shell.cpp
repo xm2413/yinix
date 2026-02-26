@@ -3,12 +3,18 @@
 #include <sstream>
 #include <cstdlib>
 #include <unistd.h>
+#include <filesystem>
 #include <readline/readline.h>
 #include <readline/history.h>
 
 Shell::Shell() {
+    // 持久化数据存在可执行文件旁的 data/ 目录下
+    // 运行时 argv[0] 不可用，改用相对于 HOME 的固定路径下 osProj/data/
     const char* home = std::getenv("HOME");
-    fsSavePath  = home ? std::string(home) + "/.yinix_fs.dat" : ".yinix_fs.dat";
+    std::string dataDir = home ? std::string(home) + "/osProj/data" : "./data";
+    // 确保 data/ 目录存在
+    std::filesystem::create_directories(dataDir);
+    fsSavePath  = dataDir + "/yinix_fs.dat";
     interactive = isatty(fileno(stdin));
     if (interactive) fs.load(fsSavePath);
 }
