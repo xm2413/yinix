@@ -15,6 +15,7 @@ public:
 
     int  allocate(int size, int ownerPid = -1);  // 返回起始地址，-1 表示失败
     bool release(int addr);
+    void releaseByPid(int pid);  // 进程退出时批量释放
     void printMap();
 
 private:

@@ -39,6 +39,20 @@ bool MemoryManager::release(int addr) {
     return false;
 }
 
+void MemoryManager::releaseByPid(int pid) {
+    bool any = false;
+    for (auto& b : blocks) {
+        if (!b.free && b.ownerPid == pid) {
+            b.free = true;
+            b.ownerPid = -1;
+            any = true;
+            std::cout << "内存块 [addr=" << b.start << ", size=" << b.size
+                      << "] 随进程 [" << pid << "] 退出自动释放\n";
+        }
+    }
+    if (any) merge();
+}
+
 void MemoryManager::merge() {
     auto it = blocks.begin();
     while (it != blocks.end()) {

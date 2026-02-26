@@ -64,7 +64,11 @@ void Shell::handleProc(const std::vector<std::string>& args) {
         procMgr.createProcess(args[1], pri);
     } else if (cmd == "kill") {
         if (args.size() < 2) { std::cout << "用法: kill <pid>\n"; return; }
-        procMgr.killProcess(std::stoi(args[1]));
+        int pid = std::stoi(args[1]);
+        if (procMgr.killProcess(pid)) {
+            memMgr.releaseByPid(pid);
+            devMgr.releaseByPid(pid);
+        }
     } else if (cmd == "block") {
         if (args.size() < 2) { std::cout << "用法: block <pid>\n"; return; }
         procMgr.blockProcess(std::stoi(args[1]));
