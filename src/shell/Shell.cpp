@@ -1,10 +1,17 @@
 #include "Shell.h"
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
+#include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
-Shell::Shell() {}
+Shell::Shell() {
+    const char* home = std::getenv("HOME");
+    fsSavePath  = home ? std::string(home) + "/.yinix_fs.dat" : ".yinix_fs.dat";
+    interactive = isatty(fileno(stdin));
+    if (interactive) fs.load(fsSavePath);
+}
 
 // ─────────────────────────────────────────────
 // 工具：将输入行拆分为 token 列表
@@ -160,7 +167,11 @@ void Shell::dispatch(const std::vector<std::string>& args) {
 
     // 全局命令
     if (cmd == "help") { printHelp(); return; }
-    if (cmd == "exit") { std::cout << "Bye!\n"; exit(0); }
+    if (cmd == "exit") {
+        if (interactive) fs.save(fsSavePath);
+        std::cout << "Bye!\n";
+        exit(0);
+    }
 
     // 进程管理
     if (cmd == "ps"     || cmd == "create" || cmd == "kill" ||
@@ -199,11 +210,23 @@ void Shell::run() {
     std::cout << "欢迎使用 Yinix OS 模拟器  (输入 help 查看命令)\n";
     while (true) {
         std::string prompt = "\nYinix:" + fs.getCwd() + "> ";
-        char* raw = readline(prompt.c_str());
-        if (!raw) break;          // Ctrl+D 退出
-        std::string line(raw);
-        free(raw);
-        if (!line.empty()) add_history(line.c_str());  // 加入历史
+        std::string line;
+
+        if (interactive) {
+            char* raw = readline(prompt.c_str());
+            if (!raw) {           // Ctrl+D 退出
+                fs.save(fsSavePath);
+                std::cout << "\nBye!\n";
+                break;
+            }
+            line = std::string(raw);
+            free(raw);
+            if (!line.empty()) add_history(line.c_str());
+        } else {
+            // 管道/脚本模式：直接 getline
+            if (!std::getline(std::cin, line)) break;
+        }
+
         auto args = tokenize(line);
         dispatch(args);
     }

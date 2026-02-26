@@ -2,8 +2,110 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <sstream>
 #include <ctime>
+#include <fstream>
 
+// ─── 序列化辅助 ──────────────────────────────────────
+// 转义：\ → \\  换行 → \n  | → \|
+std::string FileSystem::escapeContent(const std::string& s) {
+    std::string r;
+    for (char c : s) {
+        if      (c == '\\') r += "\\\\";
+        else if (c == '\n') r += "\\n";
+        else if (c == '|')  r += "\\|";
+        else                r += c;
+    }
+    return r;
+}
+
+std::string FileSystem::unescapeContent(const std::string& s) {
+    std::string r;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == '\\' && i + 1 < s.size()) {
+            ++i;
+            if      (s[i] == 'n')  r += '\n';
+            else if (s[i] == '|')  r += '|';
+            else                   r += s[i];
+        } else {
+            r += s[i];
+        }
+    }
+    return r;
+}
+
+// 深度优先递归写入所有节点
+// 格式：D|/path  或  F|/path|escaped_content
+void FileSystem::saveNode(std::ofstream& out, FSNode* node, const std::string& path) {
+    if (node->type == FSNodeType::DIRECTORY) {
+        out << "D|" << path << "\n";
+        for (auto& child : node->children) {
+            std::string childPath = (path == "/" ? "" : path) + "/" + child->name;
+            saveNode(out, child.get(), childPath);
+        }
+    } else {
+        out << "F|" << path << "|" << escapeContent(node->content) << "\n";
+    }
+}
+
+void FileSystem::save(const std::string& filePath) {
+    std::ofstream out(filePath);
+    if (!out) { std::cerr << "[warn] 无法保存文件系统到 " << filePath << "\n"; return; }
+    for (auto& child : root->children)
+        saveNode(out, child.get(), "/" + child->name);
+}
+
+// 按绝对路径逐级创建目录（类似 mkdir -p）
+FSNode* FileSystem::mkdirP(const std::string& absPath) {
+    FSNode* cur = root.get();
+    std::istringstream ss(absPath);
+    std::string seg;
+    while (std::getline(ss, seg, '/')) {
+        if (seg.empty()) continue;
+        FSNode* child = findChild(cur, seg);
+        if (!child) {
+            cur->children.push_back(std::make_shared<FSNode>(seg, FSNodeType::DIRECTORY, cur));
+            child = cur->children.back().get();
+        }
+        cur = child;
+    }
+    return cur;
+}
+
+void FileSystem::load(const std::string& filePath) {
+    std::ifstream in(filePath);
+    if (!in) return;  // 首次运行，文件不存在属正常
+
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        size_t p1 = line.find('|');
+        if (p1 == std::string::npos) continue;
+        std::string type = line.substr(0, p1);
+        std::string rest = line.substr(p1 + 1);
+
+        if (type == "D") {
+            mkdirP(rest);
+        } else if (type == "F") {
+            size_t p2 = rest.find('|');
+            std::string path    = (p2 == std::string::npos) ? rest : rest.substr(0, p2);
+            std::string content = (p2 == std::string::npos) ? ""   : unescapeContent(rest.substr(p2 + 1));
+
+            size_t slash = path.rfind('/');
+            std::string parentPath = (slash == 0) ? "/" : path.substr(0, slash);
+            std::string name       = path.substr(slash + 1);
+
+            FSNode* parent = (parentPath == "/") ? root.get() : mkdirP(parentPath);
+            if (!findChild(parent, name)) {
+                auto node = std::make_shared<FSNode>(name, FSNodeType::FILE, parent);
+                node->content = content;
+                parent->children.push_back(std::move(node));
+            }
+        }
+    }
+}
+
+// ─── 原有实现 ─────────────────────────────────────────
 FileSystem::FileSystem() {
     root = std::make_shared<FSNode>("/", FSNodeType::DIRECTORY, nullptr);
     cwd = root.get();
