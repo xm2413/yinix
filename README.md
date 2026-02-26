@@ -56,8 +56,10 @@ cmake -B build && cmake --build build
 ```
 欢迎使用 Yinix OS 模拟器  (输入 help 查看命令)
 
-Yinix> help
+Yinix:/> help
 ```
+
+提示符会随当前目录动态变化，例如进入 `/home` 后显示 `Yinix:/home>`。支持上/下方向键翻阅历史命令（readline）。
 
 ### 进程管理
 
@@ -84,15 +86,15 @@ Yinix> memmap              # 再次查看，观察合并效果
 ### 文件系统
 
 ```
-Yinix> pwd                 # 显示当前路径: /
-Yinix> mkdir home          # 创建目录 home
-Yinix> cd home             # 进入 home
-Yinix> touch readme.txt    # 创建文件
-Yinix> write readme.txt Hello Yinix!  # 写入内容
-Yinix> cat readme.txt      # 读取内容
-Yinix> ls                  # 列出当前目录
-Yinix> cd ..               # 返回上级
-Yinix> rm home             # 删除目录
+Yinix:/> pwd               # 显示当前路径: /
+Yinix:/> mkdir home        # 创建目录 home
+Yinix:/> cd home           # 进入 home
+Yinix:/home> touch readme.txt    # 创建文件
+Yinix:/home> write readme.txt Hello Yinix!  # 写入内容
+Yinix:/home> cat readme.txt      # 读取内容
+Yinix:/home> ls            # 列出当前目录
+Yinix:/home> cd ..         # 返回上级
+Yinix:/> rm home           # 删除目录
 ```
 
 ### 设备管理
@@ -139,7 +141,7 @@ yinix/
 
 - **进程调度**：时间片轮转，通过 `run` 命令手动触发一次 tick，避免多线程复杂性
 - **内存分配**：First Fit 算法，回收时自动合并相邻空闲块，模拟内存大小 1024 单位
-- **文件系统**：内存树形结构，文件内容以 `std::string` 存储，无磁盘持久化
+- **文件系统**：内存树形结构，文件内容以 `std::string` 存储；支持持久化，退出时自动保存至 `~/osProj/data/yinix_fs.dat`，下次启动自动恢复
 - **设备管理**：预置 5 个虚拟设备（printer0、disk0、disk1、keyboard0、screen0）
 - **集成联动**：`kill` 进程时自动释放其占用的内存和设备
-- **数据持久化**：无，程序退出后所有数据清空（课程演示用途）
+- **Shell 特性**：动态提示符随当前目录变化（`Yinix:/path>`）；基于 readline 支持上/下键历史命令
