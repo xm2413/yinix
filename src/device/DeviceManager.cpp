@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 
+// 初始化固定设备池（课程演示用）。
 DeviceManager::DeviceManager() {
     devices.emplace_back("printer0", "printer");
     devices.emplace_back("disk0",    "disk");
@@ -17,6 +18,7 @@ Device* DeviceManager::find(const std::string& name) {
 }
 
 bool DeviceManager::allocate(const std::string& name, int pid) {
+    // 独占分配：设备忙时直接拒绝。
     Device* d = find(name);
     if (!d) { std::cout << "错误: 设备 '" << name << "' 不存在\n"; return false; }
     if (d->status == DeviceStatus::BUSY) {
@@ -55,6 +57,7 @@ void DeviceManager::listDevices() {
 }
 
 void DeviceManager::releaseByPid(int pid) {
+    // 进程退出后，回收其占用的全部设备。
     for (auto& d : devices) {
         if (d.ownerPid == pid) {
             d.status = DeviceStatus::IDLE;

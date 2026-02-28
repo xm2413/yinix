@@ -36,6 +36,8 @@ echo ""
 run_suite test_device.sh
 echo ""
 run_suite test_integration.sh
+echo ""
+run_suite test_sync.sh
 
 echo ""
 echo "╔══════════════════════════════════════╗"

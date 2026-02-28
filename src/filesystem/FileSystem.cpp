@@ -6,8 +6,8 @@
 #include <ctime>
 #include <fstream>
 
-// ─── 序列化辅助 ──────────────────────────────────────
-// 转义：\ → \\  换行 → \n  | → \|
+// 序列化辅助：将内容转为单行安全文本。
+// 转义规则：\ -> \\，换行 -> \n，分隔符 | -> \|
 std::string FileSystem::escapeContent(const std::string& s) {
     std::string r;
     for (char c : s) {
@@ -34,8 +34,8 @@ std::string FileSystem::unescapeContent(const std::string& s) {
     return r;
 }
 
-// 深度优先递归写入所有节点
-// 格式：D|/path  或  F|/path|escaped_content
+// 深度优先写入节点。
+// 持久化格式：D|/path   或   F|/path|escaped_content
 void FileSystem::saveNode(std::ofstream& out, FSNode* node, const std::string& path) {
     if (node->type == FSNodeType::DIRECTORY) {
         out << "D|" << path << "\n";
@@ -49,13 +49,14 @@ void FileSystem::saveNode(std::ofstream& out, FSNode* node, const std::string& p
 }
 
 void FileSystem::save(const std::string& filePath) {
+    // 只保存根目录下的真实子节点，根本身无需落盘。
     std::ofstream out(filePath);
     if (!out) { std::cerr << "[warn] 无法保存文件系统到 " << filePath << "\n"; return; }
     for (auto& child : root->children)
         saveNode(out, child.get(), "/" + child->name);
 }
 
-// 按绝对路径逐级创建目录（类似 mkdir -p）
+// 按绝对路径逐级创建目录（类似 mkdir -p）。
 FSNode* FileSystem::mkdirP(const std::string& absPath) {
     FSNode* cur = root.get();
     std::istringstream ss(absPath);
@@ -85,8 +86,10 @@ void FileSystem::load(const std::string& filePath) {
         std::string rest = line.substr(p1 + 1);
 
         if (type == "D") {
+            // 目录记录：直接补齐路径。
             mkdirP(rest);
         } else if (type == "F") {
+            // 文件记录：拆分出“路径 + 内容”。
             size_t p2 = rest.find('|');
             std::string path    = (p2 == std::string::npos) ? rest : rest.substr(0, p2);
             std::string content = (p2 == std::string::npos) ? ""   : unescapeContent(rest.substr(p2 + 1));
@@ -95,6 +98,7 @@ void FileSystem::load(const std::string& filePath) {
             std::string parentPath = (slash == 0) ? "/" : path.substr(0, slash);
             std::string name       = path.substr(slash + 1);
 
+            // 父目录不存在时自动补齐，再创建文件节点。
             FSNode* parent = (parentPath == "/") ? root.get() : mkdirP(parentPath);
             if (!findChild(parent, name)) {
                 auto node = std::make_shared<FSNode>(name, FSNodeType::FILE, parent);
@@ -105,7 +109,7 @@ void FileSystem::load(const std::string& filePath) {
     }
 }
 
-// ─── 原有实现 ─────────────────────────────────────────
+// ---- 运行时文件系统操作（对应 Shell 命令） ----
 FileSystem::FileSystem() {
     root = std::make_shared<FSNode>("/", FSNodeType::DIRECTORY, nullptr);
     cwd = root.get();
@@ -118,6 +122,7 @@ FSNode* FileSystem::findChild(FSNode* dir, const std::string& name) {
 }
 
 std::string FileSystem::cwdPath() {
+    // 由 cwd 沿 parent 回溯生成绝对路径。
     if (cwd == root.get()) return "/";
     std::string path;
     FSNode* cur = cwd;
@@ -147,6 +152,7 @@ void FileSystem::ls() {
 }
 
 bool FileSystem::cd(const std::string& path) {
+    // 支持根目录、父目录和当前目录下子目录三类路径。
     if (path == "/") { cwd = root.get(); return true; }
     if (path == "..") {
         if (cwd->parent) cwd = cwd->parent;
@@ -191,6 +197,7 @@ bool FileSystem::read(const std::string& name) {
 }
 
 bool FileSystem::rm(const std::string& name) {
+    // 直接从当前目录 children 删除目标节点（共享指针自动回收子树）。
     auto& ch = cwd->children;
     auto it = std::find_if(ch.begin(), ch.end(),
         [&](const std::shared_ptr<FSNode>& n){ return n->name == name; });

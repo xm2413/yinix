@@ -2,16 +2,18 @@
 #include <iostream>
 #include <iomanip>
 
+// 初始化为一个完整空闲块。
 MemoryManager::MemoryManager(int totalSize) : total(totalSize) {
     blocks.push_back({0, totalSize, true, -1});
 }
 
 int MemoryManager::allocate(int size, int ownerPid) {
+    // First Fit：从低地址到高地址找第一个可容纳块。
     for (auto it = blocks.begin(); it != blocks.end(); ++it) {
         if (it->free && it->size >= size) {
             int addr = it->start;
             if (it->size > size) {
-                // 切割剩余部分
+                // 若块更大，切割出“已分配块 + 剩余空闲块”。
                 blocks.insert(std::next(it), {addr + size, it->size - size, true, -1});
             }
             it->size = size;
@@ -26,6 +28,7 @@ int MemoryManager::allocate(int size, int ownerPid) {
 }
 
 bool MemoryManager::release(int addr) {
+    // 按起始地址精确匹配释放，避免误释放。
     for (auto& b : blocks) {
         if (b.start == addr && !b.free) {
             b.free = true;
@@ -41,6 +44,7 @@ bool MemoryManager::release(int addr) {
 
 void MemoryManager::releaseByPid(int pid) {
     bool any = false;
+    // 扫描并回收属于该 PID 的全部内存块。
     for (auto& b : blocks) {
         if (!b.free && b.ownerPid == pid) {
             b.free = true;
@@ -54,6 +58,7 @@ void MemoryManager::releaseByPid(int pid) {
 }
 
 void MemoryManager::merge() {
+    // 链表天然保持地址顺序，线性合并相邻空闲块即可。
     auto it = blocks.begin();
     while (it != blocks.end()) {
         auto next = std::next(it);
