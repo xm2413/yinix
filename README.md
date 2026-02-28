@@ -13,6 +13,7 @@
 | 内存管理 | ✅ 已完成 | First Fit 分配、空闲区合并 |
 | 文件系统 | ✅ 已完成 | 内存目录树、路径导航、文件读写 |
 | 设备管理 | ✅ 已完成 | 虚拟设备分配与释放 |
+| 进程同步/互斥 | ✅ 已完成 | PV 信号量、进程阻塞与唤醒 |
 
 ---
 
@@ -106,6 +107,19 @@ Yinix> alloc disk0 2       # 将 disk0 分配给进程2
 Yinix> release printer0    # 释放 printer0
 ```
 
+### 进程同步与互斥（PV 信号量）
+
+```
+Yinix> sem_create mutex 1  # 创建二元信号量（互斥锁），初始值=1
+Yinix> sem_create empty 3  # 创建计数信号量，初始值=3
+Yinix> sem_list            # 列出所有信号量及当前值
+Yinix> sem_p mutex 1       # 进程1 执行 P(mutex)：value--，不足则阻塞
+Yinix> sem_v mutex         # 执行 V(mutex)：value++，有等待进程则唤醒
+Yinix> sem_del mutex       # 删除信号量
+```
+
+> **说明**：信号量是纯计数器，不与设备或内存块绑定。`sem_p <name> <pid>` 表示让进程 pid 对该信号量执行 P 操作；资源不足时进程自动进入 BLOCKED 状态，V 操作后由系统唤醒。
+
 ---
 
 ## 项目结构
@@ -121,7 +135,10 @@ yinix/
     ├── process/
     │   ├── PCB.h
     │   ├── ProcessManager.h
-    │   └── ProcessManager.cpp
+    │   ├── ProcessManager.cpp
+    │   ├── Semaphore.h
+    │   ├── SyncManager.h
+    │   └── SyncManager.cpp
     ├── memory/
     │   ├── MemoryManager.h
     │   └── MemoryManager.cpp
@@ -143,5 +160,6 @@ yinix/
 - **内存分配**：First Fit 算法，回收时自动合并相邻空闲块，模拟内存大小 1024 单位
 - **文件系统**：内存树形结构，文件内容以 `std::string` 存储；支持持久化，退出时自动保存至 `~/osProj/data/yinix_fs.dat`，下次启动自动恢复
 - **设备管理**：预置 5 个虚拟设备（printer0、disk0、disk1、keyboard0、screen0）
+- **进程同步/互斥**：经典 PV 信号量，`SyncManager` 复用调度层的阻塞/唤醒接口；支持互斥锁（初始值=1）与计数信号量（初始值>1）两种语义
 - **集成联动**：`kill` 进程时自动释放其占用的内存和设备
 - **Shell 特性**：动态提示符随当前目录变化（`Yinix:/path>`）；基于 readline 支持上/下键历史命令
